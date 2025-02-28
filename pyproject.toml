@@ -1,0 +1,19 @@
+[project]
+name = "talent-data-pipeline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "beautifulsoup4>=4.13.3",
+    "black[jupyter]>=25.1.0",
+    "lxml>=5.3.1",
+    "numpy>=2.2.3",
+    "pandas>=2.2.3",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "tensorflow>=2.14.0",
+]
+
+
+
