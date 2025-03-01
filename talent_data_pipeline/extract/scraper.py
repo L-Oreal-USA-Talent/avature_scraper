@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import requests
@@ -63,17 +64,16 @@ def _extract_html_data(html_link, source_path: Path) -> None:
     _save_table_data(source_path, column_headings, all_data[1:])
 
 
-def download_html_data(
-    data_html_link: str,
+def _download_html_data(
+    data_url: str,
     data_path: Path,
     with_verify: bool = True,
     request_retries: int = 3,
 ) -> None:
     """
-    Download Avature HTML links as data_path as CSV. It will save
-    to the warehouse.
+    Download Avature HTML links as data_path as CSV. It will save to data_path.
     :param data_path: The absolute path to the file that will contain ingested data.
-    :param data_html_link: The HTML public link.
+    :param data_url: The URL pointing to HTML tabular data.
     :param with_verify: Boolean toggle for SSL verification. Default is True.
     :param request_retries: The maximum number of requests attempted. Default is 3.
     :return: None
@@ -89,13 +89,60 @@ def download_html_data(
     s.mount("https://", HTTPAdapter(max_retries=retries))
 
     try:
-        html_res: Response = s.get(data_html_link, verify=with_verify)
+        html_res: Response = s.get(data_url, verify=with_verify)
     except (
         requests.exceptions.HTTPError,
         requests.exceptions.Timeout,
         requests.exceptions.RequestException,
     ) as e:
-        print(f"{data_html_link} responded with: {e}. The data cannot be ingested.")
+        print(f"{data_url} responded with: {e}. The data cannot be ingested.")
     else:
         _extract_html_data(html_res, data_path)
         print(f"{data_path} has been created.")
+
+
+def ingest_link(list_url: str, data_file_path: Path, ssl_verify: bool = True) -> None:
+    """
+    Ingest data from HTML links as indicated in `json_paths`.
+    :param list_url: HTML public link with tabular data.
+    :param data_file_path: Path to the data file.
+    :param ssl_verify: Toggle SSL verification. Default is True
+    :return: None
+    """
+    _download_html_data(
+        data_url=list_url,
+        data_path=data_file_path,
+        with_verify=ssl_verify,
+    )
+
+
+def ingest_multi_links(
+    json_paths: list[str], src_dir: Path, storage_dir: Path, ssl_verify: bool = True
+) -> None:
+    """
+    Ingest data from HTML links as indicated in `json_paths`.
+    :param json_paths: JSON file that contains desired file name and HTML data.
+    :param src_dir: Directory that contains all json_paths.
+    :param storage_dir: Directory in which all ingested data should be stored.
+    :param ssl_verify: Toggle SSL verification. Default is True.
+    :return: None
+    """
+    talent_data_jsons: list[dict] = []
+    for path_ in json_paths:
+        json_path: Path = Path(src_dir) / path_
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data_: dict = json.load(f)
+                talent_data_jsons.append(data_)
+        except FileNotFoundError:
+            print(f"Error: JSON file not found: {json_path}. Continuing...")
+            continue
+
+    for talent_json in talent_data_jsons:
+        for list_name, list_url in talent_json.items():
+            data_file_path = Path(storage_dir) / f"{list_name}.csv"
+            _download_html_data(
+                data_url=list_url,
+                data_path=data_file_path,
+                with_verify=ssl_verify,
+            )

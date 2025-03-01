@@ -15,5 +15,6 @@ dependencies = [
     "tensorflow>=2.14.0",
 ]
 
-
+[project.scripts]
+avature-scrape = "talent_data_pipeline.extract.cli:main"
 
