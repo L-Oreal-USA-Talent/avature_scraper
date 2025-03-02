@@ -1,6 +1,6 @@
 from .config.transformer import Transformer
-from .extract.scraper import _download_html_data
 from .extract.cli import main as cli_main
+from .extract.scraper import _download_html_data, ingest_link, ingest_multi_links
 from .load.sqlite_loader import DataBase
 from .transform.applicants import create_applicant_table
 from .transform.jobs import transform_jobs
@@ -10,6 +10,8 @@ from .utils import make_application_pairs
 __all__ = [
     "Transformer",
     "_download_html_data",
+    "ingest_link",
+    "ingest_multi_links",
     "cli_main",
     "DataBase",
     "create_applicant_table",

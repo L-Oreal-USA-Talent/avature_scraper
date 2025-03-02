@@ -1,10 +1,60 @@
 import argparse
-from pathlib import Path
+import logging
 import sys
+from logging import Logger
+from os import getenv
+from pathlib import Path
+
+from dotenv import load_dotenv
+
 from .scraper import ingest_link, ingest_multi_links
 
 
+# Set path to env file
+def load_environment() -> bool:
+    """Load environment variables from .env if it exists."""
+    env_path: Path = Path(".") / ".env"
+    logger: Logger = logging.getLogger("CLI")
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+        logger.debug(f"Read environment variables from {env_path}")
+        return True
+    logger.debug(
+        "Please set an environment file as .env in the project root directory."
+    )
+    return False
+
+
+def check_environment() -> bool:
+    """Check the configuration of the environment."""
+    logger: Logger = logging.getLogger()
+
+    load_environment()
+
+    required_vars: list[str] = [
+        "AVATURE_MART_DIR",
+        "AVATURE_SOURCE_DIR",
+        "AVATURE_WAREHOUSE_DIR",
+    ]
+
+    # Check for missing variables
+    missing_vars: list[str] = [var for var in required_vars if not getenv(var)]
+    if missing_vars:
+        logger.error(
+            f"Missing required environment variables: {', '.join(missing_vars)}"
+        )
+        return False
+
+    return True
+
+
 def main():
+    """Entry point for CLI"""
+    if not load_environment():
+        sys.exit(1)
+    if not check_environment():
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(
         prog="HTML tabluar scarper.",
         description="Scrape tabular data from a webpage and save it to a CSV file",
@@ -41,8 +91,9 @@ def main():
         "-p",
         "--parentDir",
         required=False,
+        default=getenv("AVATURE_WAREHOUSE_DIR"),
         nargs="?",
-        help="Parent directory path where the file(s) should be saved",
+        help="Parent directory path where the file(s) should be saved. By default, it uses the environment's 'AVATURE_WAREHOUSE_DIR' value.",
         type=str,
     )
 
@@ -50,8 +101,9 @@ def main():
         "-k",
         "--sourceJSON",
         required=False,
+        default=getenv("AVATURE_SOURCE_DIR"),
         nargs="?",
-        help="Parent directory path where the listJSON is located",
+        help="Parent directory path where the listJSON is located. By default, it uses the environment's 'AVATURE_SOURCE_DIR' value.",
         type=str,
     )
 
@@ -60,7 +112,7 @@ def main():
         "--listJSON",
         required=False,
         nargs="+",
-        help="JSON file that contains multiple URLs",
+        help="Name of the JSON file that contains multiple URLs (e.g. talent_links.json)",
         type=str,
     )
 
@@ -85,8 +137,7 @@ def main():
             ssl_verify=args["no_ssl"],
         )
     elif args["type"] == "single":
-        # list_path: Path = Path(f"{args["parentDir"]}{args["fileName"]}")
-        list_path: Path = Path(args["parentDir"] + args["fileName"])
+        list_path: Path = Path(args["parentDir"]) / args["fileName"]
         ingest_link(
             list_url=args["listLink"],
             data_file_path=list_path,
