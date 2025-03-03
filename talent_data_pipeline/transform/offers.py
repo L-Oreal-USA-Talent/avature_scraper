@@ -8,7 +8,7 @@ def transform_offers(
     offer_status: str,
     dedup_cols: list[str],
     col_rename: dict,
-    use_cols: list[str] | None = None,
+    keep_cols: list[str] | None = None,
 ) -> DataFrame:
     """
     Transform a dataset of offers.
@@ -40,6 +40,7 @@ def transform_offers(
     offer_frame["Offer Year"] = pd.NA
     offer_frame["Offer Pair"] = pd.NA
     offer_frame["Offer Source"] = pd.NA
+    offer_frame["Pipeline candidate?"] = pd.NA
 
     if "Offer Accepted Date (OAD)" in offer_frame:
         offer_frame["Offer Date"] = offer_frame["Offer Accepted Date (OAD)"]
@@ -50,14 +51,31 @@ def transform_offers(
     else:
         offer_frame["Offer Date"] = offer_frame["Last job step update"]
 
+    # This column takes precedence but in the case that the source is blank,
+    # use the Source column found in the source form as a backup
     if "Select the source of recruitment :" in offer_frame:
         offer_frame["Offer Source"] = offer_frame["Select the source of recruitment :"]
+
+    if "Was the candidate in your pipeline before being hired?" in offer_frame:
+        offer_frame["Pipeline candidate?"] = offer_frame[
+            "Was the candidate in your pipeline before being hired?"
+        ]
+        # Drop native pipeline field
+        offer_frame = offer_frame.drop(
+            columns=["Was the candidate in your pipeline before being hired?"]
+        )
 
     if "Source" in offer_frame:
         blank_offer_source: bool = offer_frame["Offer Source"].isna()
         offer_frame.loc[blank_offer_source, "Offer Source"] = offer_frame.loc[
             blank_offer_source, "Source"
         ]
+        pipeline_as_source: bool = offer_frame["Offer Source"] == "Pipeline"
+        offer_frame.loc[pipeline_as_source, "Pipeline candidate?"] = "Yes"
+
+    offer_frame["Pipeline candidate?"] = offer_frame["Pipeline candidate?"].fillna(
+        value="No"
+    )
 
     offer_frame["Time in Process"] = (
         offer_frame["Offer Date"] - offer_frame["JI | Recruitment Start Date"]
@@ -69,14 +87,14 @@ def transform_offers(
         offer_frame["Job ID"].astype(str) + "-" + offer_frame["Person ID"].astype(str)
     )
 
-    if use_cols:
+    if keep_cols:
         missing_cols: list[str] = list(
-            set(use_cols) - set(offer_frame.columns.to_list())
+            set(keep_cols) - set(offer_frame.columns.to_list())
         )
         for missing_col in missing_cols:
             offer_frame[missing_col] = pd.NA
 
-        offer_frame = offer_frame.loc[:, use_cols]
+        offer_frame = offer_frame.loc[:, keep_cols]
 
     offer_frame = offer_frame.rename(columns=col_rename)
 
