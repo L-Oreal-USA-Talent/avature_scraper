@@ -17,7 +17,7 @@ def transform_offers(
     :param offer_status: Choose between "Accepted", "Rejected", or "Reneged".
     :param dedup_cols: The column by which to deduplicate the DataFrame.
     :param col_rename: A dict of column that specifies how to relabel original name.
-    :param use_cols: A list of column labels that should be kept.
+    :param keep_cols: A list of column labels that should be kept.
     :return: A transformed DataFrame of offers.
     """
     if offer_frame.empty:
@@ -94,8 +94,7 @@ def transform_offers(
         for missing_col in missing_cols:
             offer_frame[missing_col] = pd.NA
 
-        offer_frame = offer_frame.loc[:, keep_cols]
-
+    offer_frame = offer_frame.loc[:, keep_cols]
     offer_frame = offer_frame.rename(columns=col_rename)
 
     return offer_frame.drop_duplicates(subset=dedup_cols)
