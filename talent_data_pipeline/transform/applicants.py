@@ -12,6 +12,7 @@ def create_applicant_table(
     Create a dimensional table of applicants.
     The transformed table will using the columns specified in `BASE_APPLICANTS_COLS`.
     Columns will be renamed according to AVATURE_RENAMED_COLUMNS specified in environment.
+    `Link to job date` and `Visit date` are standardized to `YYYY-MM-DD` and renamed to `Date`.
 
     :param rename_cols:
     :param app_frame: DataFrame containing the applicant data.
@@ -26,11 +27,12 @@ def create_applicant_table(
         return app_frame
 
     applicant_frame: DataFrame = app_frame.copy()
+    applicant_frame_cols = applicant_frame.columns
 
     if applicant_type == "External":
         # Early careers team generally asks mandatory form questions that
         # provide diversity and university info
-        if "University" in applicant_frame.columns:
+        if "University" in applicant_frame_cols:
             applicant_frame.loc[
                 applicant_frame["University"].str.contains("Other"), "University"
             ] = applicant_frame.loc[
@@ -38,7 +40,7 @@ def create_applicant_table(
             ]
             applicant_frame["University"] = applicant_frame["University"].str.upper()
 
-        if "What is your ethnicity?" in applicant_frame.columns:
+        if "What is your ethnicity?" in applicant_frame_cols:
             applicant_frame.loc[
                 applicant_frame["DD | Race"].isin([pd.NA, "I Prefer Not to Answer"]),
                 "DD | Race",
@@ -47,7 +49,7 @@ def create_applicant_table(
                 "What is your ethnicity?",
             ]
 
-        if {"Source", "Other source"}.issubset(applicant_frame.columns):
+        if {"Source", "Other source"}.issubset(applicant_frame_cols):
             applicant_frame.loc[
                 applicant_frame["Source"].str.contains("Other"), "Source"
             ] = applicant_frame.loc[
@@ -68,26 +70,45 @@ def create_applicant_table(
             {"EI | Carol Gender 🔒": {"F": "Female", "M": "Male"}}
         )
 
-    applicant_frame = applicant_frame.drop(
-        columns=[
-            "What is your ethnicity?",
-            "Other source",
-            "University.1",
-        ],
-        errors="ignore",
-    )
+    # Cases where the date field comes across as a datetime stamp
+    if "Link to job date" in applicant_frame_cols:
+        applicant_frame["New Date"] = pd.to_datetime(
+            applicant_frame["Link to job date"].dt.date
+        )
+        applicant_frame = applicant_frame.drop(columns=["Link to job date"])
+        applicant_frame = applicant_frame.rename(
+            columns={"New Date": "Link to job date"}
+        )
+
+    if "Visit date" in applicant_frame_cols:
+        applicant_frame["New Visit Date"] = pd.to_datetime(
+            applicant_frame["Visit date"].dt.date
+        )
+        applicant_frame = applicant_frame.drop(columns=["Visit date"])
+        applicant_frame = applicant_frame.rename(
+            columns={"New Visit Date": "Visit date"}
+        )
 
     # Standardize schema in case app_frame does not
     # contain all columns specified in applicant_cols
     missing_applicant_cols: list[str] = list(
-        set(applicant_cols) - set(applicant_frame.columns.to_list())
+        set(applicant_cols) - set(applicant_frame_cols.to_list())
     )
     if missing_applicant_cols:
         for missing_col in missing_applicant_cols:
             applicant_frame[missing_col] = pd.NA
 
     applicant_frame: DataFrame = applicant_frame.loc[:, applicant_cols]
+
     applicant_frame["Applicant Type"] = applicant_type
     applicant_frame = applicant_frame.rename(columns=rename_cols)
+    applicant_frame = applicant_frame.rename(
+        columns={"Link to job date": "Date", "Visit date": "Date"}
+    )
 
-    return applicant_frame.drop_duplicates(subset=["Person ID"])
+    # Now, sort by Date so that the latest entry is kept
+    applicant_frame = applicant_frame.sort_values(
+        by=["Person ID", "Date"], ascending=[True, False]
+    )
+
+    return applicant_frame.drop_duplicates(subset=["Person ID"], keep="first")
