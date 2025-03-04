@@ -38,6 +38,14 @@ def create_applicant_table(
             ] = applicant_frame.loc[
                 applicant_frame["University"].str.contains("Other"), "University.1"
             ]
+
+            if "PI | University" in applicant_frame_cols:
+                applicant_frame.loc[
+                    applicant_frame["University"].isna(), "University"
+                ] = applicant_frame.loc[
+                    applicant_frame["University"].isna(), "PI | University"
+                ]
+
             applicant_frame["University"] = applicant_frame["University"].str.upper()
 
         if "What is your ethnicity?" in applicant_frame_cols:
