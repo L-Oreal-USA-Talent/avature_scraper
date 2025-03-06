@@ -24,13 +24,15 @@ def transform_offers(
         print("DataFrame is empty. Returning original empty frame.")
         return offer_frame
 
+    offer_frame_cols = offer_frame.columns
+
     offer_frame["Applicant Type"] = applicant_type
     offer_frame["Offer Status"] = offer_status
     offer_frame.loc[
         offer_frame["JI | Recruitment Start Date"].isna(), "JI | Recruitment Start Date"
     ] = offer_frame.loc[offer_frame["JI | Recruitment Start Date"].isna(), "Date"]
 
-    if "USA | PRISM Req ID" in offer_frame:
+    if "USA | PRISM Req ID" in offer_frame_cols:
         blank_prism: bool = offer_frame["USA | PRISM Req ID"].isna()
         offer_frame.loc[blank_prism, "USA | PRISM Req ID"] = "LUSA-" + offer_frame.loc[
             blank_prism, "Job ID"
@@ -42,7 +44,7 @@ def transform_offers(
     offer_frame["Offer Source"] = pd.NA
     offer_frame["Pipeline candidate?"] = pd.NA
 
-    if "Offer Accepted Date (OAD)" in offer_frame:
+    if "Offer Accepted Date (OAD)" in offer_frame_cols:
         offer_frame["Offer Date"] = offer_frame["Offer Accepted Date (OAD)"]
         blank_offer_date: bool = offer_frame["Offer Date"].isna()
         offer_frame.loc[blank_offer_date, "Offer Date"] = offer_frame.loc[
@@ -53,19 +55,26 @@ def transform_offers(
 
     # This column takes precedence but in the case that the source is blank,
     # use the Source column found in the source form as a backup
-    if "Select the source of recruitment :" in offer_frame:
+    if "Select the source of recruitment :" in offer_frame_cols:
         offer_frame["Offer Source"] = offer_frame["Select the source of recruitment :"]
 
-    if "Was the candidate in your pipeline before being hired?" in offer_frame:
+    if "Was the candidate in your pipeline before being hired?" in offer_frame_cols:
         offer_frame["Pipeline candidate?"] = offer_frame[
             "Was the candidate in your pipeline before being hired?"
         ]
-        # Drop native pipeline field
         offer_frame = offer_frame.drop(
             columns=["Was the candidate in your pipeline before being hired?"]
         )
 
-    if "Source" in offer_frame:
+    if "Did the candidate come from a pipeline?" in offer_frame_cols:
+        offer_frame["Pipeline candidate?"] = offer_frame[
+            "Did the candidate come from a pipeline?"
+        ]
+        offer_frame = offer_frame.drop(
+            columns=["Did the candidate come from a pipeline?"]
+        )
+
+    if "Source" in offer_frame_cols:
         blank_offer_source: bool = offer_frame["Offer Source"].isna()
         offer_frame.loc[blank_offer_source, "Offer Source"] = offer_frame.loc[
             blank_offer_source, "Source"
@@ -73,9 +82,7 @@ def transform_offers(
         pipeline_as_source: bool = offer_frame["Offer Source"] == "Pipeline"
         offer_frame.loc[pipeline_as_source, "Pipeline candidate?"] = "Yes"
 
-    offer_frame["Pipeline candidate?"] = offer_frame["Pipeline candidate?"].fillna(
-        value="No"
-    )
+    offer_frame["Pipeline candidate?"] = offer_frame["Pipeline candidate?"].fillna("No")
 
     offer_frame["Time in Process"] = (
         offer_frame["Offer Date"] - offer_frame["JI | Recruitment Start Date"]
