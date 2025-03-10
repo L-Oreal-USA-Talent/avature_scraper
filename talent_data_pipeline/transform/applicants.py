@@ -57,7 +57,9 @@ def create_applicant_table(
             columns={"Temp University": "University"}
         )
 
-        applicant_frame["University"] = applicant_frame["University"].astype(str)
+        applicant_frame["University"] = applicant_frame["University"].astype(
+            StringDtype()
+        )
         applicant_frame["University"] = applicant_frame["University"].str.upper()
 
         if "What is your ethnicity?" in applicant_frame_cols:
@@ -112,7 +114,7 @@ def create_applicant_table(
     # Standardize schema in case app_frame does not
     # contain all columns specified in applicant_cols
     missing_applicant_cols: list[str] = list(
-        set(applicant_cols) - set(applicant_frame_cols.to_list())
+        set(applicant_cols) - set(applicant_frame.columns.to_list())
     )
     if missing_applicant_cols:
         for missing_col in missing_applicant_cols:
