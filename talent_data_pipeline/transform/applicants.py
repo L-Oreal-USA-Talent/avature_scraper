@@ -32,21 +32,33 @@ def create_applicant_table(
     if applicant_type == "External":
         # Early careers team generally asks mandatory form questions that
         # provide diversity and university info
+        applicant_frame["Temp University"] = pd.NA
+
         if "University" in applicant_frame_cols:
+            applicant_frame["Temp University"] = applicant_frame["University"]
             applicant_frame.loc[
-                applicant_frame["University"].str.contains("Other"), "University"
+                applicant_frame["Temp University"].str.contains("Other"),
+                "Temp University",
             ] = applicant_frame.loc[
-                applicant_frame["University"].str.contains("Other"), "University.1"
+                applicant_frame["Temp University"].str.contains("Other"), "University.1"
             ]
 
-            if "PI | University" in applicant_frame_cols:
-                applicant_frame.loc[
-                    applicant_frame["University"].isna(), "University"
-                ] = applicant_frame.loc[
-                    applicant_frame["University"].isna(), "PI | University"
-                ]
+        if "PI | University" in applicant_frame_cols:
+            applicant_frame.loc[
+                applicant_frame["Temp University"].isna(), "Temp University"
+            ] = applicant_frame.loc[
+                applicant_frame["Temp University"].isna(), "PI | University"
+            ]
 
-            applicant_frame["University"] = applicant_frame["University"].str.upper()
+        applicant_frame = applicant_frame.drop(
+            columns=["University", "University.1", "PI | University"]
+        )
+        applicant_frame = applicant_frame.rename(
+            columns={"Temp University": "University"}
+        )
+
+        applicant_type["University"] = applicant_frame["University"].astype(str)
+        applicant_frame["University"] = applicant_frame["University"].str.upper()
 
         if "What is your ethnicity?" in applicant_frame_cols:
             applicant_frame.loc[
