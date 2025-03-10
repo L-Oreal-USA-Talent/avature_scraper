@@ -51,13 +51,13 @@ def create_applicant_table(
             ]
 
         applicant_frame = applicant_frame.drop(
-            columns=["University", "University.1", "PI | University"]
+            columns=["University", "University.1", "PI | University"], errors="ignore"
         )
         applicant_frame = applicant_frame.rename(
             columns={"Temp University": "University"}
         )
 
-        applicant_type["University"] = applicant_frame["University"].astype(str)
+        applicant_frame["University"] = applicant_frame["University"].astype(str)
         applicant_frame["University"] = applicant_frame["University"].str.upper()
 
         if "What is your ethnicity?" in applicant_frame_cols:
