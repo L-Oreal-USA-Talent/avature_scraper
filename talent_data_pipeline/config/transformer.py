@@ -61,24 +61,41 @@ class Transformer:
 
         for path_ in list_of_paths:
             data_path: Path = storage_path / path_
-            try:
-                data_frame: DataFrame = read_csv(
-                    data_path,
-                    parse_dates=date_cols,
-                    date_format=date_frmt,
-                    dtype=col_dtypes,
-                    index_col=load_index,
-                    usecols=load_cols,
-                    on_bad_lines="warn",
-                )
-            except FileNotFoundError:
-                print(f"{data_path} does not exist. Returning empty DataFrame")
-                frames.append(DataFrame())
-            except EmptyDataError:
-                print(f"{data_path} is empty. Appending empty DataFrame.")
-                frames.append(DataFrame())
-            else:
-                frames.append(data_frame)
+            file_extension: str = data_path.suffix[1:]
+            if file_extension == "parquet":
+                try:
+                    data_frame: DataFrame = pd.read_parquet(
+                        data_path,
+                        engine="pyarrow",
+                        columns=load_cols,
+                    )
+                except FileNotFoundError:
+                    print(f"{data_path} does not exist. Returning empty DataFrame")
+                    frames.append(DataFrame())
+                except EmptyDataError:
+                    print(f"{data_path} is empty. Appending empty DataFrame.")
+                    frames.append(DataFrame())
+                else:
+                    frames.append(data_frame)
+            elif file_extension == "csv":
+                try:
+                    data_frame: DataFrame = read_csv(
+                        data_path,
+                        parse_dates=date_cols,
+                        date_format=date_frmt,
+                        dtype=col_dtypes,
+                        index_col=load_index,
+                        usecols=load_cols,
+                        on_bad_lines="warn",
+                    )
+                except FileNotFoundError:
+                    print(f"{data_path} does not exist. Returning empty DataFrame")
+                    frames.append(DataFrame())
+                except EmptyDataError:
+                    print(f"{data_path} is empty. Appending empty DataFrame.")
+                    frames.append(DataFrame())
+                else:
+                    frames.append(data_frame)
 
         return pd.concat(frames, ignore_index=ignore_index)
 
@@ -89,13 +106,24 @@ class Transformer:
         data_file_label: str,
         keep_index: bool = False,
     ) -> None:
+        """Save a DataFrame to a specified path that is concatenation of storage_path and
+        data_file_label.
+
+        Args:
+            data_frame (DataFrame): DataFrame that should be saved.
+            storage_path (Path): Directory.
+            data_file_label (str): An index label that points to a filename with an extension.
+            keep_index (bool, optional): Whether to save the index of the data_frame. Defaults to False.
         """
-        Save a file to the mart set in config.
-        :param storage_path:
-        :param data_frame: DataFrame to save.
-        :param data_file_label: File label given in index.
-        :param keep_index: Boolean to keep index in frame. Default is False.
-        :return: None
-        """
+
         file_save_path: Path = storage_path / self.index_lib[data_file_label]
-        data_frame.to_csv(file_save_path, index=keep_index)
+        file_extension: str = file_save_path.suffix[1:]
+
+        if file_extension == "parquet":
+            data_frame.to_parquet(file_save_path, index=keep_index)
+        elif file_extension == "csv":
+            data_frame.to_csv(file_save_path, index=keep_index)
+        else:
+            raise ValueError(
+                f"Unsupported file extension: {file_extension}. Supported extensions are .parquet and .csv."
+            )
