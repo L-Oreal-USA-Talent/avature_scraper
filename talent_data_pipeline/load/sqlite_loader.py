@@ -1,18 +1,20 @@
 import sqlite3
 from pathlib import Path
+import pandas as pd
+from pandas import DataFrame
 
 
 class DataBase:
     """
-    Used to connect, write to and read from a local sqlite3 database
+    Used to connect, write to and read from a local sqlite3 database.
     """
 
     def __init__(self, db_file: Path):
-        """Create a database in the file. Access the connection and cursor attributes.
+        """Create a connection to the database.
 
-        :param db_file: Database that contains database.
+        Args:
+            db_file (Path): Path to a .db file.
         """
-        self.conn = None
         try:
             self.conn = sqlite3.connect(db_file)
         except FileNotFoundError:
@@ -22,76 +24,96 @@ class DataBase:
         self._create_tables()
 
     def close(self):
-        """
-        close the db connection
-        :return: None
-        """
+        """Close database."""
         self.conn.close()
 
     def _create_tables(self):
-        """
-        create new database table if one doesn't exist
-        :return: None
-        """
-        offer_query = """
-            CREATE TABLE IF NOT EXISTS offers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT
-        ) """
+        """Create initial tables in the database."""
         job_query = """
             CREATE TABLE IF NOT EXISTS jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT
         ) """
-        funnel_query = """
-            CREATE TABLE IF NOT EXISTS funnel (
-            id INTEGER PRIMARY KEY AUTOINCREMENT
-        ) """
+        self.cursor.execute(job_query)
+
         applicant_query = """
             CREATE TABLE IF NOT EXISTS applicants (
             id INTEGER PRIMARY KEY AUTOINCREMENT
         ) """
-
-        self.cursor.execute(offer_query)
-        self.conn.commit()
-
-        self.cursor.execute(job_query)
-        self.conn.commit()
-
-        self.cursor.execute(funnel_query)
-        self.conn.commit()
-
         self.cursor.execute(applicant_query)
+
+        funnel_query = """
+            CREATE TABLE IF NOT EXISTS funnel (
+            id INTEGER PRIMARY KEY AUTOINCREMENT
+        ) """
+        self.cursor.execute(funnel_query)
+
+        event_funnel_query = """
+            CREATE TABLE IF NOT EXISTS event_funnel (
+            id INTEGER PRIMARY KEY AUTOINCREMENT
+        )"""
+        self.cursor.execute(event_funnel_query)
+
         self.conn.commit()
 
-    def get_all_data(self, tbl: str, name: str = None) -> list[str]:
-        """Get rows of data from a table.
-
-        :param tbl: Name of the table in the database.
-        :param name: Full name of recruiter. Defaults to None.
-        :return: list[str]
+    def replace_data(self, table_name: str, df: DataFrame) -> None:
+        """Replace all data in table_name with data from df.
+        Args:
+            table_name (str): Name of the table in the database.
+            df (DataFrame): DataFrame that will refresh table_name.
         """
-        if not name:
-            query = f"SELECT * FROM {tbl}"
-            self.cursor.execute(query)
-        else:
-            query = f"SELECT * FROM {tbl} WHERE Recruiter = ?"
-            self.cursor.execute(query, (name,))
 
-        result = self.cursor.fetchall()
+        # Delete existing data
+        self.cursor.execute(f"DELETE FROM {table_name}")
 
-        return result
+        # Insert new data
+        df.to_sql(table_name, self.conn, if_exists="append", index=False)
 
-    def get_jobs_by_recruiter(self, name=None):
-        """Get rows of job data filtered by recruiter.
+        self.conn.commit()
 
-        :param name: _description_, defaults to None
-        :return: _description_
+    def query_to_dataframe(self, query: str, col_dtypes: dict = None) -> DataFrame:
+        """Execute SQL query and return results as a Pandas DataFrame.
+
+        Args:
+            query (str): Query that returns results.
+            col_dtypes (dict): A dictionary of column mapping to data types.
+
+        Returns:
+            DataFrame: DataFrame containing executed query.
         """
-        return self.get_all_data(name, tbl="jobs")
+        return pd.read_sql_query(query, self.conn, dtype=col_dtypes)
 
-    def get_offers_by_recruiter(self, name=None):
-        """Get rows of offers filtered by recruiter.
+    def get_table_info(self, table_name: str) -> dict:
+        """Get detailed information about the table.
 
-        :param name: _description_
-        :return: _description_
+        Args:
+            table_name (str): Table in the database.
+
+        Returns:
+            dict: Dictionary with table name, row count, and column information.
         """
-        return self.get_all_data(name, tbl="offers")
+
+        # Get table schema
+        self.cursor.execute(f"PRAGMA table_info({table_name})")
+        schema = self.cursor.fetchall()
+
+        # Get row count
+        self.cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        count = self.cursor.fetchone()[0]
+
+        self.conn.close()
+
+        # Format results
+        columns = []
+        for col in schema:
+            columns.append(
+                {
+                    "cid": col[0],
+                    "name": col[1],
+                    "type": col[2],
+                    "notnull": col[3],
+                    "default_value": col[4],
+                    "pk": col[5],
+                }
+            )
+
+        return {"table_name": table_name, "row_count": count, "columns": columns}
