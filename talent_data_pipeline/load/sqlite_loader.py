@@ -23,10 +23,6 @@ class DataBase:
         self.cursor = self.conn.cursor()
         self._create_tables()
 
-    def close(self):
-        """Close database."""
-        self.conn.close()
-
     def _create_tables(self):
         """Create initial tables in the database."""
         job_query = """
@@ -41,6 +37,12 @@ class DataBase:
         ) """
         self.cursor.execute(applicant_query)
 
+        applicant_supplement_query = """
+            CREATE TABLE IF NOT EXISTS applicants_supplement (
+            id INTEGER PIMRARY KEY AUTOINCREMENT
+        ) """
+        self.cursor.execute(applicant_supplement_query)
+
         funnel_query = """
             CREATE TABLE IF NOT EXISTS funnel (
             id INTEGER PRIMARY KEY AUTOINCREMENT
@@ -54,6 +56,14 @@ class DataBase:
         self.cursor.execute(event_funnel_query)
 
         self.conn.commit()
+
+    def execute_query(self, query: str):
+        """Execute a query on the database."""
+        self.cursor.execute(query)
+
+    def close(self):
+        """Close database."""
+        self.conn.close()
 
     def replace_data(self, table_name: str, df: DataFrame) -> None:
         """Replace all data in table_name with data from df.
