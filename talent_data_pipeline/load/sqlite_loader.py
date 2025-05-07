@@ -39,7 +39,7 @@ class DataBase:
 
         applicant_supplement_query = """
             CREATE TABLE IF NOT EXISTS applicants_supplement (
-            id INTEGER PIMRARY KEY AUTOINCREMENT
+            id INTEGER PRIMARY KEY AUTOINCREMENT
         ) """
         self.cursor.execute(applicant_supplement_query)
 
