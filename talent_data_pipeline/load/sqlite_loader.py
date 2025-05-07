@@ -60,6 +60,7 @@ class DataBase:
     def execute_query(self, query: str):
         """Execute a query on the database."""
         self.cursor.execute(query)
+        self.conn.commit()
 
     def close(self):
         """Close database."""
