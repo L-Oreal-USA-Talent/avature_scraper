@@ -52,5 +52,6 @@ def explode_date_range(
             transactions_extended[start_date_col], transactions_extended[end_date_col]
         )
     ]
+    transactions_extended = transactions_extended.explode("Calendar Date")
 
     return transactions_extended
