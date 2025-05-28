@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+
 import pandas as pd
 from pandas import DataFrame
 
@@ -73,15 +74,14 @@ class DataBase:
             df (DataFrame): DataFrame that will refresh table_name.
         """
 
-        # Delete existing data
-        self.cursor.execute(f"DELETE FROM {table_name}")
-
         # Insert new data
-        df.to_sql(table_name, self.conn, if_exists="append", index=False)
+        df.to_sql(table_name, self.conn, if_exists="replace", index=False)
 
         self.conn.commit()
 
-    def query_to_dataframe(self, query: str, col_dtypes: dict = None) -> DataFrame:
+    def query_to_dataframe(
+        self, query: str, col_dtypes: dict | None = None
+    ) -> DataFrame:
         """Execute SQL query and return results as a Pandas DataFrame.
 
         Args:
