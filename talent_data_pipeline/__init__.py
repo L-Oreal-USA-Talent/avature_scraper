@@ -1,3 +1,4 @@
+from .config.consts import AvatureConsts
 from .config.transformer import Transformer
 from .extract.cli import main as cli_main
 from .extract.scraper import _download_html_data, ingest_link, ingest_multi_links
@@ -9,6 +10,7 @@ from .utils import make_application_pairs
 
 __all__ = [
     "Transformer",
+    "AvatureConsts",
     "_download_html_data",
     "ingest_link",
     "ingest_multi_links",
