@@ -208,6 +208,13 @@ class AvatureConsts:
         ],
     }
 
+    DATE_COLS: list[str] = [
+        "Creation date",
+        "Date",
+        "JI | Recruitment Start Date",
+        "Date closed",
+    ]
+
     WORK_HISTORY_COLS: list[str] = [
         "Person ID",
         "Last update",
