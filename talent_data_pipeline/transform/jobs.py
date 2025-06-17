@@ -6,12 +6,15 @@ from pandas import DataFrame, Series, Timestamp
 def transform_jobs(
     jobs_frame: DataFrame, dedup_field: list[str], run_date: Timestamp
 ) -> DataFrame:
-    """
-    Return a transformed dataset of jobs.
-    :param jobs_frame: DataFrame of jobs.
-    :param dedup_field: The field(s) by which to deduplicate data.
-    :param run_date: The date the script is executed.
-    :return: Dataframe of transformed jobs.
+    """Run a series of transformation steps on job data.
+
+    Args:
+        jobs_frame (DataFrame): DataFrame that must contain the `Job ID` and other columns noted in the specification.
+        dedup_field (list[str]): A list of field(s) by which to deduplicate data. More than likely, you will only pass ['Job ID']
+        run_date (Timestamp): The reference datetime that the report should use to calculate `Days open`.
+
+    Returns:
+        DataFrame: Transformed DataFrame of jobs.
     """
 
     if jobs_frame.empty:
@@ -69,7 +72,7 @@ def transform_jobs(
         jobs_frame.loc[:, "Job Year"] = run_date.year
         jobs_frame.loc[:, "Days open"] = (
             run_date - jobs_frame["JI | Recruitment Start Date"]
-        ).dt.days
+        ).dt.days  # type: ignore
     else:
         job_closed_mask: Series[bool] = jobs_frame["Job Status"] == "Closed"
         jobs_frame.loc[:, "Job Year"] = jobs_frame["Date closed"].dt.strftime("%Y")
