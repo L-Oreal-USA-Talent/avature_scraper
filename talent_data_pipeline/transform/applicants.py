@@ -93,8 +93,24 @@ def create_applicant_table(
             {"EI | Carol Gender 🔒": {"F": "Female", "M": "Male"}}
         )
 
-    # Cases where the date field comes across as a datetime stamp from Avature
-    # as opposed to the expected `DD-MM-YYYY` format that predominates n Avature
+    # applicant_cols is useful to maintain a consistent schema across
+    # applicant data from various years where
+    # the schema has likely differed
+    if applicant_cols:
+        missing_applicant_cols: list[str] = list(
+            set(applicant_cols) - set(applicant_frame.columns.to_list())
+        )
+        for missing_col in missing_applicant_cols:
+            applicant_frame[missing_col] = pd.NA
+
+        applicant_frame: DataFrame = applicant_frame.loc[:, applicant_cols]
+
+    # Normalize the date columns as a last step
+
+    # Treat the cases where the date field is exported as a datetime stamp from Avature
+    # as opposed to the expected `DD-MM-YYYY` format that predominates in Avature
+
+    applicant_frame_cols = applicant_frame.columns
     if "Link to job date" in applicant_frame_cols:
         applicant_frame["New Date"] = pd.to_datetime(
             applicant_frame["Link to job date"].dt.date
@@ -124,18 +140,6 @@ def create_applicant_table(
         applicant_frame = applicant_frame.sort_values(
             by=["Person ID", "Date"], ascending=[True, False]
         )
-
-    # applicant_cols is useful to maintain a consistent schema across
-    # applicant data from various years where
-    # the schema has likely differed
-    if applicant_cols:
-        missing_applicant_cols: list[str] = list(
-            set(applicant_cols) - set(applicant_frame.columns.to_list())
-        )
-        for missing_col in missing_applicant_cols:
-            applicant_frame[missing_col] = pd.NA
-
-        applicant_frame: DataFrame = applicant_frame.loc[:, applicant_cols]
 
     applicant_frame["Applicant Type"] = applicant_type
 
