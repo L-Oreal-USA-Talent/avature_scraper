@@ -67,7 +67,8 @@ def transform_jobs(
     # begin counting days relative to the "JI | Recruitment Start Date"
     # Days open should count from the day the report is run
     # or the day it was closed in the system
-    jobs_frame = jobs_frame.drop(columns="Days open")
+    if "Days open" in jobs_frame.columns:
+        jobs_frame = jobs_frame.drop(columns="Days open")
     if "Date closed" not in jobs_frame:
         jobs_frame.loc[:, "Job Year"] = run_date.year
         jobs_frame.loc[:, "Days open"] = (
