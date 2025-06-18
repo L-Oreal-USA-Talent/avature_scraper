@@ -96,6 +96,7 @@ class AvatureConsts:
         "Visit date": "datetime64[ns]",
         "Date closed": "datetime64[ns]",
         "Position date started": "datetime64[ns]",
+        "Offer Accepted Date (OAD)": "datetime64[ns]",
         "JI | Specialization": StringDtype(),
         "JI | HR Division": StringDtype(),
         "JI | Brand": StringDtype(),
