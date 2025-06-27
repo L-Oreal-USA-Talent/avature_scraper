@@ -98,6 +98,8 @@ class AvatureConsts:
         "Position date started": "datetime64[ns]",
         "Offer Accepted Date (OAD)": "datetime64[ns]",
         "Last job step update": "datetime64[ns]",
+        "Historic step start time": "datetime64[ns]",
+        "Historic step end time": "datetime64[ns]",
         "JI | Specialization": StringDtype(),
         "JI | HR Division": StringDtype(),
         "JI | Brand": StringDtype(),
