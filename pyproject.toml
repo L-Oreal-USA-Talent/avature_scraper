@@ -20,4 +20,4 @@ classifiers = ["Private :: Do Not Upload"]
 package = true
 
 [project.scripts]
-avature-scrape = "avature_scraper.extract.cli:main"
+avature-scraper = "avature_scraper.extract.cli:main"
