@@ -2,7 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
-from extract.scraper import ingest_html_table
+from scraper import ingest_html_table
 
 
 def main(argv=None) -> None:
