@@ -3,6 +3,7 @@ name = "avature-scraper"
 version = "0.4.0"
 description = "Scrape Avature links and save as csv files."
 readme = "README.md"
+authors = [{ name = "Abraham Briones", email = "abraham.briones@loreal.com" }]
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.13.3",
@@ -13,6 +14,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "requests>=2.32.3",
 ]
+classifiers = ["Private :: Do Not Upload"]
 
 [tool.uv]
 package = true
