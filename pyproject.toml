@@ -1,7 +1,7 @@
 [project]
-name = "talent-data-pipeline"
+name = "avature-scraper"
 version = "0.4.0"
-description = "Add your description here"
+description = "Scrape Avature links and save as csv files."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -18,4 +18,4 @@ dependencies = [
 package = true
 
 [project.scripts]
-avature-scrape = "talent_data_pipeline.extract.cli:main"
+avature-scrape = "avature_scraper.extract.cli:main"
