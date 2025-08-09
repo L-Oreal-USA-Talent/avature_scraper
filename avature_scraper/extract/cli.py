@@ -80,19 +80,19 @@ def main(argv=None) -> None:
 
     # Arg that toggles SSL verification for http requests.
     # By default, SSL verification is enabled.
-    # Pass --disable_ssl to disable.
+    # Pass --no-ssl to disable.
+    ssl_verify = True
     parser.add_argument(
+        "-s",
         "--disable_ssl",
-        action="store_true",
-        help="Disable SSL verification. By default, SSL verification is enabled.",
-        type=bool,
+        required=False,
+        action="store_const",
+        default=ssl_verify,
+        const=not ssl_verify,
+        help="Toggle SSL verification. Default is True. Pass to disable.",
     )
 
     args = parser.parse_args(argv)
-
-    # If --disable_ssl is present, args.disable_ssl is True, so ssl_verify becomes False.
-    # If --disable_ssl is not present, args.disable_ssl is False, so ssl_verify becomes True.
-    ssl_verify: bool = not args.disable_ssl
 
     # Operating in single mode is simple:
     # Ingest the link, save to the output_path
@@ -103,7 +103,7 @@ def main(argv=None) -> None:
         ingest_html_table(
             html_url=args.url,
             target_file=url_file,
-            with_verify=ssl_verify,
+            with_verify=args.disable_ssl,
         )
 
     # Multi mode requires iterating though the source jsons
@@ -132,7 +132,9 @@ def main(argv=None) -> None:
         for map in maps_to_ingest:
             for file_name, url in map.items():
                 file_path: Path = Path(args.output_path) / f"{file_name}.csv"
-                ingest_html_table(html_url=url, target_file=file_path)
+                ingest_html_table(
+                    html_url=url, target_file=file_path, with_verify=args.disable_ssl
+                )
 
 
 if __name__ == "__main__":
