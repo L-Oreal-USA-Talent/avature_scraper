@@ -21,17 +21,29 @@ def main(argv=None) -> None:
         "-t",
         "--type",
         required=True,
-        help="Type of ingestion. Choose between 'list' or 'single'",
+        help="""Type of ingestion. Choose between 'single' or 'multi'.
+        If 'single', only one URL is processed.
+        If 'multi', a mapping of file_name passed via -m or --url_map is expected.""",
         choices=["single", "multi"],
         type=str,
     )
 
     parser.add_argument(
-        "-w",
+        "-i",
         "--input_path",
         required=False,
         nargs="?",
-        help="""Parent directory path where data should be written.""",
+        help="""Directory from which mapping of URLs should be read.
+        Use only when --type is 'multi'.""",
+        type=str,
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output_path",
+        required=False,
+        nargs="?",
+        help="""Directory to which data should be written.""",
         type=str,
     )
 
@@ -49,17 +61,9 @@ def main(argv=None) -> None:
         "--file_name",
         required=False,
         nargs="?",
-        help="File where data should be written, e.g. 'data.csv'",
-        type=str,
-    )
-
-    parser.add_argument(
-        "-k",
-        "--map_path",
-        required=False,
-        nargs="?",
-        help="""Parent directory path where the listJSON is located. 
-        By default, it uses the environment AVATURE_SOURCE_DIR.""",
+        help="""File where data should be written, e.g. 'data.csv'. 
+        It is prepended with the output directory.
+        Use only when --type is 'single'""",
         type=str,
     )
 
@@ -68,7 +72,9 @@ def main(argv=None) -> None:
         "--url_map",
         required=False,
         action="append",
-        help="JSON file mapping pairs of file names and URLs.",
+        help="""JSON file mapping pairs of file names and URLs. 
+        Use only when --type is 'multi'.
+        Pass -m or --url_map multiple times to specify multiple mappings.""",
         type=str,
     )
 
@@ -83,22 +89,21 @@ def main(argv=None) -> None:
         help="Toggle SSL verification. Default is True. Pass to disable.",
     )
 
-    # Parse args and set pipeline options
-    # Args are exclusive to this script and are required.
-    # Pipeline options can be passed only when required, i.e. after ingesting
-    # the latest data
-    args, pipeline_opts = parser.parse_known_args(argv)
+    args = parser.parse_args(argv)
 
     # Operating in single mode is simple:
-    # Ingest the link, save to the input_path
+    # Ingest the link, save to the output_path
     if args.type == "single":
+        if not args.url:
+            raise ValueError("URL is required for single ingestion mode.")
+        url_file: Path = Path(args.output_path) / args.file_name
         ingest_html_table(
             html_url=args.url,
-            target_file=args.input_path,
+            target_file=url_file,
             with_verify=args.no_ssl,
         )
 
-    # Mutli mode requires iterating though the source jsons
+    # Multi mode requires iterating though the source jsons
     # that are located at map_path
     # Then, iterate through each url_map and read each file_name:url pair
     elif args.type == "multi":
@@ -108,8 +113,8 @@ def main(argv=None) -> None:
         # Iterate over all the json_paths
         # and collect url mappings
         for json_path in json_paths:
-            # Prepend with source_dir
-            url_mapping: Path = Path(args.map_path) / json_path
+            # Prepend with input_path
+            url_mapping: Path = Path(args.input_path) / json_path
 
             if url_mapping.suffix != ".json":
                 raise ValueError(
@@ -123,7 +128,7 @@ def main(argv=None) -> None:
         # Iterate over all collected mappings and ingest data
         for map in maps_to_ingest:
             for file_name, url in map.items():
-                file_path: Path = Path(args.input_path) / f"{file_name}.csv"
+                file_path: Path = Path(args.output_path) / f"{file_name}.csv"
                 ingest_html_table(html_url=url, target_file=file_path)
 
 

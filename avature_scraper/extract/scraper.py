@@ -31,7 +31,7 @@ def _get_row_data(table_row) -> list[str]:
     return [data.get_text(strip=True) for data in table_row.find_all("td")]
 
 
-def _save_table_data(
+def _save_table_as_csv(
     target_file: Path,
     col_headings: list[str],
     tbl_rows: list[list[str]],
@@ -76,7 +76,7 @@ def _extract_html_data(html_link, target_file: Path) -> None:
     for row in table_rows:
         all_data.append(_get_row_data(row))
 
-    _save_table_data(target_file, column_headings, all_data[1:])
+    _save_table_as_csv(target_file, column_headings, all_data[1:])
 
 
 def ingest_html_table(
