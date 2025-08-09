@@ -78,18 +78,21 @@ def main(argv=None) -> None:
         type=str,
     )
 
-    ssl_verify = True
+    # Arg that toggles SSL verification for http requests.
+    # By default, SSL verification is enabled.
+    # Pass --disable_ssl to disable.
     parser.add_argument(
-        "-s",
-        "--no_ssl",
-        required=False,
-        action="store_const",
-        default=ssl_verify,
-        const=not ssl_verify,
-        help="Toggle SSL verification. Default is True. Pass to disable.",
+        "--disable_ssl",
+        action="store_true",
+        help="Disable SSL verification. By default, SSL verification is enabled.",
+        type=bool,
     )
 
     args = parser.parse_args(argv)
+
+    # If --disable_ssl is present, args.disable_ssl is True, so ssl_verify becomes False.
+    # If --disable_ssl is not present, args.disable_ssl is False, so ssl_verify becomes True.
+    ssl_verify: bool = not args.disable_ssl
 
     # Operating in single mode is simple:
     # Ingest the link, save to the output_path
@@ -100,7 +103,7 @@ def main(argv=None) -> None:
         ingest_html_table(
             html_url=args.url,
             target_file=url_file,
-            with_verify=args.no_ssl,
+            with_verify=ssl_verify,
         )
 
     # Multi mode requires iterating though the source jsons
